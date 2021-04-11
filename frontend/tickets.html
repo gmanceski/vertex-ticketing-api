@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+
+<body style="padding: 2%">
+
+<div ng-app="menuApp" ng-controller="menuCtrl">
+    <div ng-if="!logedin">
+        <label>Корисничко име:</label>
+        <input type="text" ng-model="user.username">
+        <label>Лозинка:</label>
+        <input type="password" ng-model="user.password"><br>
+        <button type="button" class="btn btn-primary btn-sm" ng-click="login()">Најава</button>
+    </div>
+    <div ng-if="logedin">
+        <div class="row pb-3">
+            <div class="col">
+                <h3 style="display: inline">{{taskTimOpis}}</h3>
+                <button class="btn btn-danger btn-sm" ng-click="logout()" style="float:right">Одјава</button>
+            </div>
+        </div>
+        <div ng-if="!selectedTask">
+            <div class="row">
+                <div class="col">
+                    <div style="height:600px;max-height: 500px;overflow-y: auto;overflow-x: hidden">
+                        <div class="d-flex" ng-repeat="task in tasks" ng-if="task.Status==0">
+                            <div class="container p-3 my-1 border" ng-click="selectTask(task)">
+                                <div class="col-sm-4">{{task.Broj}} |-> {{task.Datum | date : 'dd.mm.yyyy HH:mm.ss'}}
+                                    <br>
+                                    {{task.OpisZaRabota}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div ng-if="selectedTask">
+            <!--            <div class="d-flex" ng-repeat="task in tasks" ng-if="task.edit==true">-->
+            <div class="container p-3 my-1 border">
+                <div >{{selectedTask.Broj}} |-> {{selectedTask.Datum | date : 'dd.mm.yyyy HH:mm.ss'}}
+                    <br>
+                    {{selectedTask.OpisZaRabota}}
+                    <br>
+                    <input type="text" class="form-control" ng-model="selectedTask.description">
+                    <br>
+                    <button ng-click="UpdateTask(selectedTask)">Done</button>
+                    <button ng-click="back()">Cancel</button>
+                </div>
+            </div>
+            <!--            </div>-->
+            <pre>
+                {{stock | json : spacing}}
+            </pre>
+        </div>
+    </div>
+    <script>
+        var app = angular.module('menuApp', []);
+        app.controller('menuCtrl', function ($scope, $http) {
+            $scope.user = {};
+            let token = localStorage.getItem("kluc");
+            $scope.firmaIme = localStorage.getItem("firmaIme");
+            $scope.selectTask = (task) => {
+                $scope.selectedTask = task;
+            }
+            $scope.back = () => {
+                $scope.selectedTask = '';
+            }
+
+            $scope.EditTask = (task) => {
+                $scope.editing = true;
+                $scope.description = "";
+                task.edit = true;
+            };
+            $scope.UpdateTask = (task) => {
+                $http({
+                    method: "POST",
+                    url: 'http://10.0.0.149:3000/api/ticketing/task-done',
+                    headers: {Authorization: token},
+                    data: {DokumentID: task.DokumentID, OpisNaIzvrsenaRabota: task.description}
+                }).then(function (response) {
+                    alert(response.data.message);
+                    $scope.selectedTask.Status = 1;
+                    $scope.selectedTask = '';
+                }, function (response) {
+                    alert(response.data.message);
+                    $scope.status = response.statusText;
+                });
+
+            };
+            $scope.CancelEditTask = (task) => {
+                $scope.selectedTask = '';
+            };
+            // $scope.Filter = (search) => {
+            //     if (!search) return $scope.products;
+            //     return $scope.products.filter(product => product.ProizvodIme.toLowerCase().startsWith(search.toLowerCase()))
+            // }
+            $scope.logout = () => {
+                $scope.logedin = false;
+                localStorage.clear();
+            };
+            $scope.Total = () => {
+                let total = 0;
+                $scope.products.filter(product => product.Kolicina > 0).forEach(product => {
+                    total += product.Kolicina * product.ProdaznaCena;
+                })
+                return total;
+            };
+            $scope.login = () => {
+                $http({
+                    method: "POST",
+                    url: 'http://10.0.0.149:3000/api/ticketing/login',
+                    data: {UserName: $scope.user.username, Password: $scope.user.password}
+                }).then(function (response) {
+                    token = response.data.token;
+                    localStorage.setItem("kluc", token);
+                    $scope.taskTimOpis = response.data.exists.TaskTimOpis;
+                    localStorage.setItem("taskTimOpis", $scope.taskTimOpis.trim());
+                    $scope.getTasks();
+                    $scope.logedin = true;
+                }, function (response) {
+                    $scope.status = response.statusText;
+                });
+            };
+            $scope.getTasks = () => {
+                $http({
+                    method: "GET",
+                    url: 'http://10.0.0.149:3000/api/ticketing/task',
+                    headers: {Authorization: token}
+                }).then(function (response) {
+                    $scope.tasks = response.data;
+                }, function (response) {
+                    $scope.status = response.statusText;
+                });
+            };
+
+            $scope.getStock = () => {
+                $http({
+                    method: "GET",
+                    url: 'http://10.0.0.149:3000/api/ticketing/stock',
+                    headers: {Authorization: token}
+                }).then(function (response) {
+                    $scope.stock = response.data;
+                }, function (response) {
+                    $scope.status = response.statusText;
+                });
+            };
+
+            $scope.sendUpdateTask = () => {
+                $http({
+                    method: "POST",
+                    url: 'http://10.0.0.149:3000/api/ticketing/order',
+                    data: $scope.products.filter(product => product.Kolicina > 0),
+                    headers: {Authorization: token}
+                }).then(function (response) {
+                    alert("Порачката е примена");
+                    $scope.getTasks();
+                }, function (response) {
+                    $scope.status = response.statusText;
+                });
+            };
+            if (token) {
+                $scope.getTasks();
+                $scope.getStock();
+                $scope.logedin = true;
+            }
+        });
+    </script>
+</div>
+</body>
+</html>

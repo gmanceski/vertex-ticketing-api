@@ -1,0 +1,16 @@
+{
+  "CHANGE_ADDRESS": "Промена на адреса",
+  "CANCEL_LINES": "Деактивација на линија",
+  "CANCEL_ALL_LINES": "Деактивација на сите линии",
+  "CHANGE_INVOICE_ADDRESS": "Адреса за достава на фактура",
+  "CREATE_SUBSCRIBER": "Нова активација",
+  "ADD_EQUIPMENT":  "Додавање на оперма",
+  "CREATE_LINE": "Активација на нова линија",
+  "MANAGE_SERVICES":  "Ажурирање на сервиси",
+  "CHANGE_PLAN": "Промена на пакет",
+  "CHANGE_SIM": "Промена на SIM",
+  "CONTRACT_LABEL":  "Договор",
+  "CHANGE_PHONE_NUMBER": "Промена на тел. број",
+  "CHARGE_INVOICE_FROM_OTHER_PARTNER": "Наплата на фактура од друг партнер",
+  "ANEX2_LABEL": "Анекс 2"
+}
