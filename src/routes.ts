@@ -1,10 +1,10 @@
 import {Application, Router} from "express";
-import user from "./api/ticketing";
+import tickets from "./api/tickets";
 
 // import mvnoserver from "./api/mvno-server";
 
 const setupRoutes = (app: Router) => {
-    app.use('/ticketing', user);
+    app.use('/tickets', tickets);
 };
 
 export default setupRoutes;

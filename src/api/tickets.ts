@@ -1,6 +1,6 @@
 import {Response, Router} from 'express';
 import {UserRequest} from '../model/types';
-import * as user from '../domain/ticketing';
+import * as user from '../domain/tickets';
 import * as helpers from '../utils/helpers';
 import {auth, validatePrivilegies} from '../utils/helpers';
 import {CUser, Roles} from "../model/class";
@@ -11,6 +11,7 @@ import * as path from 'path';
 import moment = require("moment");
 import * as express from 'express';
 import db from "../../db/db";
+import {getDb} from "../domain/dbManager";
 
 const app: express.Application = express();
 
@@ -30,11 +31,12 @@ router.post('/login', [check('UserName').notEmpty(), check('Password').notEmpty(
         res.status(500).json(err);
         return;
     }
-    exists.Ime = exists.Ime.trim();
     if (!exists) {
         res.status(401).json({success: false, error: "Bad credentials."});
     } else {
+        exists.Ime = exists.Ime.trim();
         let token = await helpers.getJwt({
+            FirmaID: exists.FirmaID,
             TaskTimID: exists.TaskTimID,
             MagacinID: exists.MagacinID,
             UserName: exists.Ime
@@ -44,10 +46,11 @@ router.post('/login', [check('UserName').notEmpty(), check('Password').notEmpty(
 });
 
 router.get('/task', auth, async (req: UserRequest, res: Response) => {
+    const db = getDb(req.user.FirmaID);
     let taskTimID = req.user.TaskTimID;
     let tasks;
     try {
-        tasks = await db('tblRabotenNalog')
+        tasks = await db.mk('tblRabotenNalog')
             .select('DokumentID', 'Broj', 'Datum', 'Izdal', 'Status', 'DatumPocetok', 'DatumZavrsetok', 'PustenOD', 'ZavrsenOD', 'OpisZaRabota', 'PriklucokID', 'OpisNaIzvrsenaRabota', 'PriklucokBroj', 'KDSTipNalog', 'TaskTimID')
             .where({Status: 0, TaskTimID: taskTimID}).orderBy('Datum');
     }catch (e) {
@@ -56,24 +59,29 @@ router.get('/task', auth, async (req: UserRequest, res: Response) => {
     res.json(tasks);
 });
 
-router.get('/stock', auth, async (req: UserRequest, res: Response) => {
+router.get('/stocks', auth, async (req: UserRequest, res: Response) => {
+    const db = getDb(req.user.FirmaID);
     let magacinID = req.user.MagacinID;
-    let stock;
+    let stocks;
     try {
-        stock = await db('tblMagacinSintetika').select('tblMagacinSintetika.ProizvodSifra', 'Kolicina', 'dboXEnterpriseKDS2013.dbo.tblProizvod.ProizvodIme', 'dboXEnterpriseKDS2013.dbo.tblProizvod.Edmerka')
-            .join('dboXEnterpriseKDS2013.dbo.tblProizvod', 'tblMagacinSintetika.ProizvodSifra', '=', 'dboXEnterpriseKDS2013.dbo.tblProizvod.ProizvodSifra').where({MagacinID: magacinID})
+        stocks = await db.mk('tblMagacinSintetika').select('tblMagacinSintetika.ProizvodSifra', 'Kolicina as KolicinaNaLager', db.tblP+'.dbo.tblProizvod.ProizvodIme', db.tblG+'.dbo.tblProizvod.Edmerka')
+            .join(db.tblP+'.dbo.tblProizvod', 'tblMagacinSintetika.ProizvodSifra', '=', db.tblP+'.dbo.tblProizvod.ProizvodSifra').where({MagacinID: magacinID})
             .andWhere('Kolicina', '>', '0')
-            .orderBy('dboXEnterpriseKDS2013.dbo.tblProizvod.ProizvodIme');
+            .orderBy(db.tblP+'.dbo.tblProizvod.ProizvodIme');
+        stocks.forEach(stock => {
+            stock.Kolicina = 0;
+        })
     } catch (e) {
         res.json(e);
     }
-    res.json(stock);
+    res.json(stocks);
 });
 
 router.post('/task-done', auth, async (req: UserRequest, res: Response) => {
+    const db = getDb(req.user.FirmaID);
     let nalog = req.body;
         try {
-        await db('tblRabotenNalog').update({Status: 1, OpisNaIzvrsenaRabota: nalog.OpisNaIzvrsenaRabota}).where({DokumentID: nalog.DokumentID});
+        await db.mk('tblRabotenNalog').update({Status: 1, OpisNaIzvrsenaRabota: nalog.OpisNaIzvrsenaRabota}).where({DokumentID: nalog.DokumentID});
     } catch (e) {
         res.json({success: true, message: e});
     }
