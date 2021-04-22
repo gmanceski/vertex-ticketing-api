@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('tls').DEFAULT_MIN_VERSION = 'TLSv1'
 import * as express from 'express';
 import setupRoutes from './routes';
 import * as path from 'path';
