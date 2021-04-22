@@ -25,5 +25,5 @@ app.use('/api', router);
 app.use(haltOnTimedout);
 
 app.listen(process.env.PORT || 3000, () => {
-    console.log(`Ticketing server initialized and listening on port ${process.env.PORT || 3000}`);
+    console.log(`Ticketing server initialized and listening on port ${process.env.WEB_SERVICE_POR || 3000}`);
 });
