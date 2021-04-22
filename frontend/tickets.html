@@ -112,6 +112,8 @@
         };
 
         $scope.selectTask = (task) => {
+            $scope.stocks = [];
+            $scope.getStocks();
             $scope.selectedTask = task;
         }
         $scope.back = () => {
@@ -170,7 +172,7 @@
                 $scope.taskTimOpis = response.data.exists.TaskTimOpis;
                 localStorage.setItem("taskTimOpis", $scope.taskTimOpis.trim());
                 $scope.getTasks();
-                $scope.getStocks();
+                // $scope.getStocks();
                 $scope.logedin = true;
             }, function (response) {
                 $scope.status = response.statusText;
@@ -209,14 +211,14 @@
             }).then(function (response) {
                 alert("Порачката е примена");
                 $scope.getTasks();
-                $scope.getStocks();
+                // $scope.getStocks();
             }, function (response) {
                 $scope.status = response.statusText;
             });
         };
         if (token) {
             $scope.getTasks();
-            $scope.getStocks();
+            // $scope.getStocks();
             $scope.logedin = true;
         }
     });

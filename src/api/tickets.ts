@@ -64,15 +64,27 @@ router.get('/stocks', auth, async (req: UserRequest, res: Response) => {
     let magacinID = req.user.MagacinID;
     let stocks;
     try {
-        stocks = await db.mk('tblMagacinSintetika').select('tblMagacinSintetika.ProizvodSifra', 'Kolicina as KolicinaNaLager', db.tblP+'.dbo.tblProizvod.ProizvodIme', db.tblG+'.dbo.tblProizvod.Edmerka')
+        stocks = await db.mk('tblMagacinSintetika').select('tblMagacinSintetika.ProizvodSifra', 'Kolicina as KolicinaNaLager',
+            db.tblP+'.dbo.tblProizvod.ProizvodIme', db.tblG+'.dbo.tblProizvod.Edmerka', db.tblP+'.dbo.tblProizvod.SoSeriskiBroevi')
             .join(db.tblP+'.dbo.tblProizvod', 'tblMagacinSintetika.ProizvodSifra', '=', db.tblP+'.dbo.tblProizvod.ProizvodSifra').where({MagacinID: magacinID})
             .andWhere('Kolicina', '>', '0')
             .orderBy(db.tblP+'.dbo.tblProizvod.ProizvodIme');
-        stocks.forEach(stock => {
-            stock.Kolicina = 0;
-        })
+
+        let st = await Promise.all(stocks.map(async stock => {
+            if (stock.SoSeriskiBroevi) {
+                stock.Kolicina = 0;
+                stock.serialNo = await db.mk('tblSeriskiBroevi').select("SeriskiBroj", "Prodaden").where({ProizvodSifra: stock.ProizvodSifra, TipNaSklad: 1, SkladID: magacinID, Prodaden: false});
+            } else {
+                stock.Kolicina = 0;
+            }
+        }));
+        // stocks.forEach(stock => {
+        //     stock.Kolicina = 0;
+        // });
+
     } catch (e) {
         res.json(e);
+        return;
     }
     res.json(stocks);
 });
