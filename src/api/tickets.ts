@@ -15,7 +15,7 @@ import {getDb} from "../domain/dbManager";
 
 const app: express.Application = express();
 
-app.use('/api/menuimages', express.static(process.env.REPOSITORY_FOOD_IMAGES));
+// app.use('/api/menuimages', express.static(process.env.REPOSITORY_FOOD_IMAGES));
 
 const router = Router();
 // router.use(fileUpload());
